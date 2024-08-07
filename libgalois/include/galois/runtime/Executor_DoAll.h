@@ -60,19 +60,22 @@ class DoAllStealingExec {
     Iter shared_end;
     Diff_ty m_size;
     size_t num_iter;
+    std::unique_ptr<std::atomic<size_t>> ctr;
 
     // Stats
 
     ThreadContext()
         : work_mutex(), id(substrate::getThreadPool().getMaxThreads()),
-          shared_beg(), shared_end(), m_size(0), num_iter(0) {
+          shared_beg(), shared_end(), m_size(0), num_iter(0),
+          ctr(std::make_unique<std::atomic<size_t>>()) {
       // TODO: fix this initialization problem,
       // see initThread
     }
 
     ThreadContext(unsigned id, Iter beg, Iter end)
         : work_mutex(), id(id), shared_beg(beg), shared_end(end),
-          m_size(std::distance(beg, end)), num_iter(0) {}
+          m_size(std::distance(beg, end)), num_iter(0),
+          ctr(std::make_unique<std::atomic<size_t>>()) {}
 
     bool doWork(F func, const unsigned chunk_size) {
       Iter beg(shared_beg);
@@ -95,7 +98,9 @@ class DoAllStealingExec {
       return didwork;
     }
 
-    bool hasWorkWeak() const { return (m_size > 0); }
+    bool hasWorkWeak() const {
+      return (ctr->load(std::memory_order_relaxed) < m_size);
+    }
 
     bool hasWork() const {
       bool ret = false;
@@ -115,37 +120,27 @@ class DoAllStealingExec {
 
   private:
     bool getWork(Iter& priv_beg, Iter& priv_end, const unsigned chunk_size) {
-      bool succ = false;
-
-      work_mutex.lock();
-      {
-        if (hasWorkWeak()) {
-          succ = true;
-
-          Iter nbeg = shared_beg;
-          if (m_size <= chunk_size) {
-            nbeg   = shared_end;
-            m_size = 0;
-
-          } else {
-            std::advance(nbeg, chunk_size);
-            m_size -= chunk_size;
-            assert(m_size > 0);
-          }
-
-          priv_beg   = shared_beg;
-          priv_end   = nbeg;
-          shared_beg = nbeg;
+      if (hasWorkWeak()) {
+        size_t v = ctr->load(std::memory_order_relaxed);
+        while (!ctr->compare_exchange_weak(v, v + chunk_size,
+                                           std::memory_order_release,
+                                           std::memory_order_relaxed))
+          ;
+        if (v < m_size) {
+          priv_beg = shared_beg;
+          std::advance(priv_beg, v);
+          priv_end  = priv_beg;
+          Diff_ty x = std::min(std::distance(priv_beg, shared_end),
+                               (Diff_ty)chunk_size);
+          std::advance(priv_end, x);
+          return true;
         }
       }
-      work_mutex.unlock();
-
-      return succ;
+      return false;
     }
 
     void steal_from_end_impl(Iter& steal_beg, Iter& steal_end, const Diff_ty sz,
                              std::forward_iterator_tag) {
-
       // steal from front for forward_iterator_tag
       steal_beg = shared_beg;
       std::advance(shared_beg, sz);
@@ -177,40 +172,38 @@ class DoAllStealingExec {
   public:
     bool stealWork(Iter& steal_beg, Iter& steal_end, Diff_ty& steal_size,
                    StealAmt amount, size_t chunk_size) {
-      bool succ = false;
+      if (hasWorkWeak()) {
+        size_t v        = ctr->load(std::memory_order_relaxed);
+        size_t rem_size = m_size - v;
 
-      if (work_mutex.try_lock()) {
-
-        if (hasWorkWeak()) {
-          succ = true;
-
-          if (amount == HALF && m_size > (Diff_ty)chunk_size) {
-            steal_size = m_size / 2;
-          } else {
-            steal_size = m_size;
-          }
-
-          if (m_size <= steal_size) {
-            steal_beg = shared_beg;
-            steal_end = shared_end;
-
-            shared_beg = shared_end;
-
-            steal_size = m_size;
-            m_size     = 0;
-
-          } else {
-
-            // steal_from_end (steal_beg, steal_end, steal_size);
-            steal_from_beg(steal_beg, steal_end, steal_size);
-            m_size -= steal_size;
-          }
+        if (amount == HALF && rem_size > (Diff_ty)chunk_size) {
+          steal_size = rem_size / 2;
+        } else {
+          steal_size = rem_size;
         }
 
-        work_mutex.unlock();
-      }
+        while (!ctr->compare_exchange_weak(v, v + steal_size,
+                                           std::memory_order_release,
+                                           std::memory_order_relaxed)) {
+          // Reduce contention by sleeping for random amounts on failure to
+          // increment
+          // unsigned int t = rand() % 10;
+          // usleep(t);
+        }
 
-      return succ;
+        if (v < m_size) {
+          // we stole elements before the queue was emptied, time to
+          // retrieve the stolen tasks
+          steal_beg = shared_beg;
+          std::advance(steal_beg, v);
+          steal_end = steal_beg;
+          Diff_ty x = std::min(std::distance(steal_beg, shared_end),
+                               (Diff_ty)steal_size);
+          std::advance(steal_end, x);
+          return true;
+        }
+      }
+      return false;
     }
 
     void assignWork(const Iter& beg, const Iter& end, const Diff_ty sz) {
@@ -223,6 +216,7 @@ class DoAllStealingExec {
         shared_beg = beg;
         shared_end = end;
         m_size     = sz;
+        *ctr       = 0;
       }
       work_mutex.unlock();
     }
