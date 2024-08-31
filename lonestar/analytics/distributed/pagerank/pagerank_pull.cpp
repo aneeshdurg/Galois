@@ -251,14 +251,20 @@ struct PageRank {
     DGTerminatorDetector dga;
 
     // unsigned int reduced = 0;
+    auto& net = galois::runtime::getSystemNetworkInterface();
 
     do {
       syncSubstrate->set_num_round(_num_iterations);
       dga.reset();
+      galois::gPrint("[", net.ID, "] PageRank_delta::go run called\n");
+      system("ping 1.2.3.8 -c 1 -s 1");
       PageRank_delta<async>::go(_graph, dga);
+      system("ping 1.2.4.8 -c 1 -s 1");
       // reset residual on mirrors
       syncSubstrate->reset_mirrorField<Reduce_add_residual>();
 
+      galois::gPrint("[", net.ID, "] iterating over nodes\n");
+      system("ping 1.2.3.9 -c 1 -s 1");
       if (personality == GPU_CUDA) {
 #ifdef GALOIS_ENABLE_GPU
         std::string impl_str("PageRank_" +
@@ -278,9 +284,11 @@ struct PageRank {
                 syncSubstrate->get_run_identifier("PageRank").c_str()));
       }
 
+      system("ping 1.2.4.9 -c 1 -s 1");
       syncSubstrate->sync<writeSource, readDestination, Reduce_add_residual,
                           Bitset_residual, async>("PageRank");
 
+      galois::gPrint("[", net.ID, "] finished iteration\n");
       galois::runtime::reportStat_Tsum(
           REGION_NAME, "NumWorkItems_" + (syncSubstrate->get_run_identifier()),
           (unsigned long)_graph.sizeEdges());
@@ -479,7 +487,7 @@ constexpr static const char* const name = "PageRank - Compiler Generated "
                                           "Distributed Heterogeneous";
 constexpr static const char* const desc = "PageRank Residual Pull version on "
                                           "Distributed Galois.";
-constexpr static const char* const url = nullptr;
+constexpr static const char* const url  = nullptr;
 
 int main(int argc, char** argv) {
   galois::DistMemSys G;
