@@ -380,7 +380,7 @@ protected:
     // waitpid(*tcpdump_pid, NULL, 0);
     //
     system("echo sending ping");
-    system("ping 1.2.3.5 -c 1 -s 1");
+    system("ping 1.2.4.4 -c 1 -s 1");
     system("echo done ping");
   }
 

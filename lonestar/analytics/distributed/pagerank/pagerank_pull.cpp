@@ -512,7 +512,9 @@ int main(int argc, char** argv) {
 
   galois::gPrint("[", net.ID, "] InitializeGraph::go called\n");
 
+  system("ping 1.2.3.6 -c 1 -s 1");
   InitializeGraph::go(*hg);
+  system("ping 1.2.4.6 -c 1 -s 1");
   galois::runtime::getHostBarrier().wait();
 
   galois::DGAccumulator<float> DGA_sum;
@@ -529,11 +531,13 @@ int main(int argc, char** argv) {
     galois::StatTimer StatTimer_main(timer_str.c_str(), REGION_NAME);
 
     StatTimer_main.start();
+    system("ping 1.2.3.7 -c 1 -s 1");
     if (execution == Async) {
       PageRank<true>::go(*hg);
     } else {
       PageRank<false>::go(*hg);
     }
+    system("ping 1.2.4.7 -c 1 -s 1");
     StatTimer_main.stop();
 
     // sanity check

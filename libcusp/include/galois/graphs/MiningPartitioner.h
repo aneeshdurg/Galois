@@ -384,7 +384,8 @@ public:
                                          base_DistGraph::globalSizeEdges());
       galois::runtime::reportStat_Single(GRNAME, std::string("TotalKeptEdges"),
                                          globalKeptEdges);
-      // GALOIS_ASSERT(globalKeptEdges * 2 == base_DistGraph::globalSizeEdges());
+      // GALOIS_ASSERT(globalKeptEdges * 2 ==
+      // base_DistGraph::globalSizeEdges());
       galois::runtime::reportStat_Single(
           GRNAME, std::string("ReplicationFactorNodes"),
           (totalNodeProxies) / (double)base_DistGraph::globalSize());
@@ -939,6 +940,19 @@ private:
     }
   }
 
+  void start_tcpdump(std::string name) {
+    galois::gPrint("Starting pcap\n", name);
+    system("echo sending ping");
+    system("ping 1.2.3.5 -c 1 -s 1");
+    system("echo done ping");
+  }
+  void stop_tcpdump() {
+    galois::gPrint("Stopping pcap", *tcpdump_pid);
+    system("echo sending ping");
+    system("ping 1.2.4.5 -c 1 -s 1");
+    system("echo done ping");
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
 
   template <typename GraphTy>
@@ -946,6 +960,7 @@ private:
                  std::vector<galois::DynamicBitSet>& proxiesOnOtherHosts) {
     galois::StatTimer loadEdgeTimer("EdgeLoading", GRNAME);
     loadEdgeTimer.start();
+    start_tcpdump();
 
     bufGraph.resetReadCounters();
     std::atomic<uint32_t> receivedNodes;
@@ -967,6 +982,7 @@ private:
 
     galois::gPrint("[", base_DistGraph::id, "] Edge loading time: ",
                    loadEdgeTimer.get_usec() / 1000000.0f, " seconds\n");
+    stop_tcpdump();
   }
 
   // no edge data version
