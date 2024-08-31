@@ -940,14 +940,12 @@ private:
     }
   }
 
-  void start_tcpdump(std::string name) {
-    galois::gPrint("Starting pcap\n", name);
+  void start_tcpdump() {
     system("echo sending ping");
     system("ping 1.2.3.5 -c 1 -s 1");
     system("echo done ping");
   }
   void stop_tcpdump() {
-    galois::gPrint("Stopping pcap", *tcpdump_pid);
     system("echo sending ping");
     system("ping 1.2.4.5 -c 1 -s 1");
     system("echo done ping");

@@ -154,35 +154,6 @@ public:
     }
   }
 
-  std::optional<pid_t> tcpdump_pid;
-  // Assumes a single thread
-  void start_tcpdump(std::string name) {
-    std::ostringstream fname;
-    fname << name;
-    fname << galois::runtime::getSystemNetworkInterface().ID;
-    fname << ".pcap";
-    auto myname = fname.str();
-
-    pid_t p = fork();
-    if (p) {
-      tcpdump_pid = p;
-    } else {
-      char* argv[7];
-      argv[0] = "tcpdump";
-      argv[1] = "-e";
-      argv[2] = "-i";
-      argv[3] = "eth0";
-      argv[4] = "-w";
-      argv[5] = (char*)malloc(myname.size() + 1);
-      strcpy(argv[5], myname.c_str());
-      argv[6] = NULL;
-      execv("tcpdump", argv);
-    }
-  }
-  void stop_tcpdump() {
-    kill(*tcpdump_pid, 9);
-    waitpid(*tcpdump_pid, NULL, 0);
-  }
 
   /**
    * Constructor
@@ -201,7 +172,6 @@ public:
         "GraphPartitioningTime", GRNAME);
     Tgraph_construct.start();
 
-    start_tcpdump("reading_from_file");
     if (readFromFile) {
       galois::gPrint("[", base_DistGraph::id,
                      "] Reading local graph from file ", localGraphFileName,
@@ -210,7 +180,6 @@ public:
       Tgraph_construct.stop();
       return;
     }
-    stop_tcpdump();
 
     galois::graphs::OfflineGraph g(filename);
     base_DistGraph::numGlobalNodes = g.size();
