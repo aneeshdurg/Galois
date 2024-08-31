@@ -347,32 +347,46 @@ private:
 protected:
   std::optional<pid_t> tcpdump_pid;
   void start_tcpdump(std::string name) {
-    galois::gPrint("Starting pcap", name);
-    std::ostringstream fname;
-    fname << name;
-    fname << galois::runtime::getSystemNetworkInterface().ID;
-    fname << ".pcap";
-    auto myname = fname.str();
+    galois::gPrint("Starting pcap\n", name);
+    // std::ostringstream fname;
+    // fname << name;
+    // fname << galois::runtime::getSystemNetworkInterface().ID;
+    // fname << ".pcap";
+    // auto myname = fname.str();
 
     pid_t p = fork();
     if (p) {
       tcpdump_pid = p;
     } else {
-      char* argv[7];
-      argv[0] = "tcpdump";
-      argv[1] = "-e";
-      argv[2] = "-i";
-      argv[3] = "eth0";
-      argv[4] = "-w";
-      argv[5] = (char*)malloc(myname.size() + 1);
-      strcpy(argv[5], myname.c_str());
-      argv[6] = NULL;
-      execv("tcpdump", argv);
+      char* argv[6];
+      argv[0] = "ping";
+      argv[1] = "-c";
+      argv[2] = "1.2.3.4";
+      argv[3] = "-s";
+      argv[4] = "1";
+      argv[5] = NULL;
+      execv("ping", argv);
     }
+    waitpid(*tcpdump_pid, NULL, 0);
   }
   void stop_tcpdump() {
     galois::gPrint("Stopping pcap", *tcpdump_pid);
-    kill(*tcpdump_pid, 9);
+    // kill(*tcpdump_pid, 9);
+    // waitpid(*tcpdump_pid, NULL, 0);
+    //
+    pid_t p = fork();
+    if (p) {
+      tcpdump_pid = p;
+    } else {
+      char* argv[6];
+      argv[0] = "ping";
+      argv[1] = "-c";
+      argv[2] = "1.2.3.5";
+      argv[3] = "-s";
+      argv[4] = "1";
+      argv[5] = NULL;
+      execv("ping", argv);
+    }
     waitpid(*tcpdump_pid, NULL, 0);
   }
 
