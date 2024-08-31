@@ -29,6 +29,7 @@
 
 #include <unordered_map>
 #include <fstream>
+#include <wait.h>
 
 #include "galois/graphs/LC_CSR_Graph.h"
 #include "galois/graphs/BufferedGraph.h"
@@ -344,6 +345,37 @@ private:
   }
 
 protected:
+  std::optional<pid_t> tcpdump_pid;
+  void start_tcpdump(std::string name) {
+    galois::gPrint("Starting pcap", name);
+    std::ostringstream fname;
+    fname << name;
+    fname << galois::runtime::getSystemNetworkInterface().ID;
+    fname << ".pcap";
+    auto myname = fname.str();
+
+    pid_t p = fork();
+    if (p) {
+      tcpdump_pid = p;
+    } else {
+      char* argv[7];
+      argv[0] = "tcpdump";
+      argv[1] = "-e";
+      argv[2] = "-i";
+      argv[3] = "eth0";
+      argv[4] = "-w";
+      argv[5] = (char*)malloc(myname.size() + 1);
+      strcpy(argv[5], myname.c_str());
+      argv[6] = NULL;
+      execv("tcpdump", argv);
+    }
+  }
+  void stop_tcpdump() {
+    galois::gPrint("Stopping pcap", *tcpdump_pid);
+    kill(*tcpdump_pid, 9);
+    waitpid(*tcpdump_pid, NULL, 0);
+  }
+
   /**
    * Wrapper call that will call into more specific compute masters
    * functions that compute masters based on nodes, edges, or both.
@@ -364,6 +396,7 @@ protected:
                           const std::vector<unsigned>& scalefactor,
                           uint32_t nodeWeight = 0, uint32_t edgeWeight = 0,
                           unsigned DecomposeFactor = 1) {
+    start_tcpdump("computeMasters");
     galois::Timer timer;
     timer.start();
     g.reset_seek_counters();
@@ -387,6 +420,7 @@ protected:
 
     timer.stop();
 
+    stop_tcpdump();
     galois::runtime::reportStatCond_Tmax<MORE_DIST_STATS>(
         GRNAME, "MasterDistTime", timer.get());
 
