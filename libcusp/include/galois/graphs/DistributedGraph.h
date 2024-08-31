@@ -367,6 +367,7 @@ protected:
       argv[5] = NULL;
       execv("ping", argv);
     }
+    kill(*tcpdump_pid, SIGINT);
     waitpid(*tcpdump_pid, NULL, 0);
   }
   void stop_tcpdump() {
@@ -387,6 +388,8 @@ protected:
       argv[5] = NULL;
       execv("ping", argv);
     }
+    usleep(500000);
+    kill(*tcpdump_pid, SIGINT);
     waitpid(*tcpdump_pid, NULL, 0);
   }
 
