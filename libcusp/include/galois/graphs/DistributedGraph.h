@@ -354,45 +354,34 @@ protected:
     // fname << ".pcap";
     // auto myname = fname.str();
 
-    pid_t p = fork();
-    if (p) {
-      tcpdump_pid = p;
-    } else {
-      char* argv[7];
-      argv[0] = "ping";
-      argv[1] = "1.2.3.4";
-      argv[2] = "-c";
-      argv[3] = "1";
-      argv[4] = "-s";
-      argv[5] = "1";
-      argv[6] = NULL;
-      execv("ping", argv);
-    }
-    // kill(*tcpdump_pid, SIGINT);
-    waitpid(*tcpdump_pid, NULL, 0);
+    system("echo sending ping");
+    system("ping 1.2.3.4 -c 1 -s 1");
+    system("echo done ping");
+    // pid_t p = fork();
+    // if (p) {
+    //   tcpdump_pid = p;
+    // } else {
+    //   char* argv[7];
+    //   argv[0] = "ping";
+    //   argv[1] = "1.2.3.4";
+    //   argv[2] = "-c";
+    //   argv[3] = "1";
+    //   argv[4] = "-s";
+    //   argv[5] = "1";
+    //   argv[6] = NULL;
+    //   execv("ping", argv);
+    // }
+    // // kill(*tcpdump_pid, SIGINT);
+    // waitpid(*tcpdump_pid, NULL, 0);
   }
   void stop_tcpdump() {
     galois::gPrint("Stopping pcap", *tcpdump_pid);
     // kill(*tcpdump_pid, 9);
     // waitpid(*tcpdump_pid, NULL, 0);
     //
-    pid_t p = fork();
-    if (p) {
-      tcpdump_pid = p;
-    } else {
-      char* argv[7];
-      argv[0] = "ping";
-      argv[1] = "1.2.3.5";
-      argv[2] = "-c";
-      argv[3] = "1";
-      argv[4] = "-s";
-      argv[5] = "1";
-      argv[6] = NULL;
-      execv("ping", argv);
-    }
-    usleep(500000);
-    kill(*tcpdump_pid, SIGINT);
-    waitpid(*tcpdump_pid, NULL, 0);
+    system("echo sending ping");
+    system("ping 1.2.3.5 -c 1 -s 1");
+    system("echo done ping");
   }
 
   /**
