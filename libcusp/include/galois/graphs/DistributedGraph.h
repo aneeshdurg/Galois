@@ -383,8 +383,8 @@ protected:
       char* argv[7];
       argv[0] = "ping";
       argv[1] = "1.2.3.5";
-      argv[2] = "1";
-      argv[3] = "-c";
+      argv[2] = "-c";
+      argv[3] = "1";
       argv[4] = "-s";
       argv[5] = "1";
       argv[6] = NULL;
