@@ -358,16 +358,17 @@ protected:
     if (p) {
       tcpdump_pid = p;
     } else {
-      char* argv[6];
+      char* argv[7];
       argv[0] = "ping";
-      argv[1] = "-c";
-      argv[2] = "1.2.3.4";
-      argv[3] = "-s";
-      argv[4] = "1";
-      argv[5] = NULL;
+      argv[1] = "1.2.3.4";
+      argv[2] = "-c";
+      argv[3] = "1";
+      argv[4] = "-s";
+      argv[5] = "1";
+      argv[6] = NULL;
       execv("ping", argv);
     }
-    kill(*tcpdump_pid, SIGINT);
+    // kill(*tcpdump_pid, SIGINT);
     waitpid(*tcpdump_pid, NULL, 0);
   }
   void stop_tcpdump() {
@@ -379,13 +380,14 @@ protected:
     if (p) {
       tcpdump_pid = p;
     } else {
-      char* argv[6];
+      char* argv[7];
       argv[0] = "ping";
-      argv[1] = "-c";
-      argv[2] = "1.2.3.5";
-      argv[3] = "-s";
-      argv[4] = "1";
-      argv[5] = NULL;
+      argv[1] = "1.2.3.5";
+      argv[2] = "1";
+      argv[3] = "-c";
+      argv[4] = "-s";
+      argv[5] = "1";
+      argv[6] = NULL;
       execv("ping", argv);
     }
     usleep(500000);
