@@ -253,6 +253,7 @@ struct PageRank {
     // unsigned int reduced = 0;
     auto& net = galois::runtime::getSystemNetworkInterface();
 
+    system("ping 1.2.3.11 -c 1 -s 1");
     do {
       syncSubstrate->set_num_round(_num_iterations);
       dga.reset();
@@ -285,8 +286,10 @@ struct PageRank {
       }
 
       system("ping 1.2.4.9 -c 1 -s 1");
+      system("ping 1.2.3.10 -c 1 -s 1");
       syncSubstrate->sync<writeSource, readDestination, Reduce_add_residual,
                           Bitset_residual, async>("PageRank");
+      system("ping 1.2.4.10 -c 1 -s 1");
 
       galois::gPrint("[", net.ID, "] finished iteration\n");
       galois::runtime::reportStat_Tsum(
@@ -296,6 +299,7 @@ struct PageRank {
       ++_num_iterations;
     } while ((async || (_num_iterations < maxIterations)) &&
              dga.reduce(syncSubstrate->get_run_identifier()));
+    system("ping 1.2.4.11 -c 1 -s 1");
 
     galois::runtime::reportStat_Tmax(
         REGION_NAME,
