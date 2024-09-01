@@ -255,20 +255,24 @@ struct PageRank {
 
     system("ping 1.2.3.11 -c 1 -s 1");
     bool reduce_value = false;
+    system("ping 1.2.3.15 -c 1 -s 1");
     do {
+      system("ping 1.2.4.15 -c 1 -s 1");
+      system("ping 1.2.3.14 -c 1 -s 1");
       syncSubstrate->set_num_round(_num_iterations);
       dga.reset();
       galois::gPrint("[", net.ID, "] PageRank_delta::go run called\n");
-      // system("ping 1.2.3.8 -c 1 -s 1");
+      system("ping 1.2.4.14 -c 1 -s 1");
+      system("ping 1.2.3.8 -c 1 -s 1");
       PageRank_delta<async>::go(_graph, dga);
-      // system("ping 1.2.4.8 -c 1 -s 1");
+      system("ping 1.2.4.8 -c 1 -s 1");
       // reset residual on mirrors
       system("ping 1.2.3.12 -c 1 -s 1");
       syncSubstrate->reset_mirrorField<Reduce_add_residual>();
       system("ping 1.2.4.12 -c 1 -s 1");
 
       galois::gPrint("[", net.ID, "] iterating over nodes\n");
-      // system("ping 1.2.3.9 -c 1 -s 1");
+      system("ping 1.2.3.9 -c 1 -s 1");
       if (personality == GPU_CUDA) {
 #ifdef GALOIS_ENABLE_GPU
         std::string impl_str("PageRank_" +
@@ -288,11 +292,12 @@ struct PageRank {
                 syncSubstrate->get_run_identifier("PageRank").c_str()));
       }
 
-      // system("ping 1.2.4.9 -c 1 -s 1");
-      // system("ping 1.2.3.10 -c 1 -s 1");
+      system("ping 1.2.4.9 -c 1 -s 1");
+      system("ping 1.2.3.10 -c 1 -s 1");
       syncSubstrate->sync<writeSource, readDestination, Reduce_add_residual,
                           Bitset_residual, async>("PageRank");
-      // system("ping 1.2.4.10 -c 1 -s 1");
+      system("ping 1.2.4.10 -c 1 -s 1");
+      system("ping 1.2.3.13 -c 1 -s 1");
 
       galois::gPrint("[", net.ID, "] finished iteration\n");
       galois::runtime::reportStat_Tsum(
@@ -300,10 +305,11 @@ struct PageRank {
           (unsigned long)_graph.sizeEdges());
 
       ++_num_iterations;
-      system("ping 1.2.3.13 -c 1 -s 1");
       reduce_value = dga.reduce(syncSubstrate->get_run_identifier());
       system("ping 1.2.4.13 -c 1 -s 1");
+      system("ping 1.2.3.15 -c 1 -s 1");
     } while ((async || (_num_iterations < maxIterations)) && reduce_value);
+    system("ping 1.2.4.15 -c 1 -s 1");
     system("ping 1.2.4.11 -c 1 -s 1");
 
     galois::runtime::reportStat_Tmax(
