@@ -233,6 +233,9 @@ struct PageRank_delta {
   }
 };
 
+#define MARKER_START(x) system("ping 1.2.3." #x " -c 1 -s 1 >/dev/null")
+#define MARKER_END(x) system("ping 1.2.4." #x " -c 1 -s 1 >/dev/null")
+
 // TODO: GPU code operator does not match CPU's operator (cpu accumulates sum
 // and adds all at once, GPU adds each pulled value individually/atomically)
 template <bool async>
@@ -253,26 +256,26 @@ struct PageRank {
     // unsigned int reduced = 0;
     auto& net = galois::runtime::getSystemNetworkInterface();
 
-    system("ping 1.2.3.11 -c 1 -s 1");
+    MARKER_START(11);
     bool reduce_value = false;
-    system("ping 1.2.3.15 -c 1 -s 1");
+    // MARKER_START(15);
     do {
-      system("ping 1.2.4.15 -c 1 -s 1");
-      system("ping 1.2.3.14 -c 1 -s 1");
+      // MARKER_END(15);
+      // MARKER_START(14);
       syncSubstrate->set_num_round(_num_iterations);
       dga.reset();
       galois::gPrint("[", net.ID, "] PageRank_delta::go run called\n");
-      system("ping 1.2.4.14 -c 1 -s 1");
-      system("ping 1.2.3.8 -c 1 -s 1");
+      //MARKER_END(14);
+      //MARKER_START(8);
       PageRank_delta<async>::go(_graph, dga);
-      system("ping 1.2.4.8 -c 1 -s 1");
+      // MARKER_END(8);
       // reset residual on mirrors
-      system("ping 1.2.3.12 -c 1 -s 1");
+      // MARKER_START(12);
       syncSubstrate->reset_mirrorField<Reduce_add_residual>();
-      system("ping 1.2.4.12 -c 1 -s 1");
+      // MARKER_END(12);
 
       galois::gPrint("[", net.ID, "] iterating over nodes\n");
-      system("ping 1.2.3.9 -c 1 -s 1");
+      // MARKER_START(9);
       if (personality == GPU_CUDA) {
 #ifdef GALOIS_ENABLE_GPU
         std::string impl_str("PageRank_" +
@@ -292,12 +295,12 @@ struct PageRank {
                 syncSubstrate->get_run_identifier("PageRank").c_str()));
       }
 
-      system("ping 1.2.4.9 -c 1 -s 1");
-      system("ping 1.2.3.10 -c 1 -s 1");
+      // MARKER_END(9);
+      MARKER_START(10);
       syncSubstrate->sync<writeSource, readDestination, Reduce_add_residual,
                           Bitset_residual, async>("PageRank");
-      system("ping 1.2.4.10 -c 1 -s 1");
-      system("ping 1.2.3.13 -c 1 -s 1");
+      MARKER_END(10);
+      // MARKER_START(13);
 
       galois::gPrint("[", net.ID, "] finished iteration\n");
       galois::runtime::reportStat_Tsum(
@@ -306,11 +309,11 @@ struct PageRank {
 
       ++_num_iterations;
       reduce_value = dga.reduce(syncSubstrate->get_run_identifier());
-      system("ping 1.2.4.13 -c 1 -s 1");
-      system("ping 1.2.3.15 -c 1 -s 1");
+      // MARKER_END(13);
+      // MARKER_START(15);
     } while ((async || (_num_iterations < maxIterations)) && reduce_value);
-    system("ping 1.2.4.15 -c 1 -s 1");
-    system("ping 1.2.4.11 -c 1 -s 1");
+    // MARKER_END(15);
+    MARKER_END(11);
 
     galois::runtime::reportStat_Tmax(
         REGION_NAME,
@@ -535,9 +538,9 @@ int main(int argc, char** argv) {
 
   galois::gPrint("[", net.ID, "] InitializeGraph::go called\n");
 
-  system("ping 1.2.3.6 -c 1 -s 1");
+  MARKER_START(6);
   InitializeGraph::go(*hg);
-  system("ping 1.2.4.6 -c 1 -s 1");
+  MARKER_END(6);
   galois::runtime::getHostBarrier().wait();
 
   galois::DGAccumulator<float> DGA_sum;
@@ -554,13 +557,13 @@ int main(int argc, char** argv) {
     galois::StatTimer StatTimer_main(timer_str.c_str(), REGION_NAME);
 
     StatTimer_main.start();
-    system("ping 1.2.3.7 -c 1 -s 1");
+    MARKER_START(7);
     if (execution == Async) {
       PageRank<true>::go(*hg);
     } else {
       PageRank<false>::go(*hg);
     }
-    system("ping 1.2.4.7 -c 1 -s 1");
+    MARKER_END(7);
     StatTimer_main.stop();
 
     // sanity check
