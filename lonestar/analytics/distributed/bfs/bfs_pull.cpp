@@ -28,6 +28,10 @@
 #include <iostream>
 #include <limits>
 
+
+#define MARKER_START(x) system("ping 1.2.3." #x " -c 1 -s 1 >/dev/null")
+#define MARKER_END(x) system("ping 1.2.4." #x " -c 1 -s 1 >/dev/null")
+
 #ifdef GALOIS_ENABLE_GPU
 #include "bfs_pull_cuda.h"
 struct CUDA_Context* cuda_ctx;
@@ -134,6 +138,7 @@ struct BFS {
       : graph(_graph), active_vertices(_dga) {}
 
   void static go(Graph& _graph) {
+    MARKER_START(11);
     unsigned _num_iterations = 0;
     DGTerminatorDetector dga;
 
@@ -159,8 +164,11 @@ struct BFS {
             galois::no_stats(), galois::steal(),
             galois::loopname(syncSubstrate->get_run_identifier("BFS").c_str()));
       }
+
+      MARKER_START(10);
       syncSubstrate->sync<writeSource, readDestination, Reduce_min_dist_current,
                           Bitset_dist_current, async>("BFS");
+      MARKER_END(10);
 
       galois::runtime::reportStat_Tsum(
           REGION_NAME, syncSubstrate->get_run_identifier("NumWorkItems"),
@@ -175,6 +183,7 @@ struct BFS {
           "NumIterations_" + std::to_string(syncSubstrate->get_run_num()),
           (unsigned long)_num_iterations);
     }
+    MARKER_END(11);
   }
 
   void operator()(GNode src) const {
