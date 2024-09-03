@@ -2864,23 +2864,34 @@ private:
    */
   template <typename SyncFnTy, typename BitsetFnTy, bool async>
   inline void sync_src_to_dst(std::string loopName) {
+
+#define MARKER_START(x) system("ping 1.2.3." #x " -c 1 -s 1 >/dev/null")
+#define MARKER_END(x) system("ping 1.2.4." #x " -c 1 -s 1 >/dev/null")
     // only broadcast for OEC
     // only reduce for IEC
     // reduce and broadcast for CVC, UVC
     if (transposed) {
+      MARKER_START(16);
       reduce<writeSource, readDestination, SyncFnTy, BitsetFnTy, async>(
           loopName);
+      MARKER_END(16);
       if (isVertexCut) {
+        MARKER_START(17);
         broadcast<writeSource, readDestination, SyncFnTy, BitsetFnTy, async>(
             loopName);
+        MARKER_END(17);
       }
     } else {
       if (isVertexCut) {
+        MARKER_START(16);
         reduce<writeSource, readDestination, SyncFnTy, BitsetFnTy, async>(
             loopName);
+        MARKER_END(16);
       }
+      MARKER_START(17);
       broadcast<writeSource, readDestination, SyncFnTy, BitsetFnTy, async>(
           loopName);
+      MARKER_END(17);
     }
   }
 
