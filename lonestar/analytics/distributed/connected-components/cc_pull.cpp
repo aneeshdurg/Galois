@@ -28,6 +28,9 @@
 #include <iostream>
 #include <limits>
 
+#define MARKER_START(x) system("ping 1.2.3." #x " -c 1 -s 1 >/dev/null")
+#define MARKER_END(x) system("ping 1.2.4." #x " -c 1 -s 1 >/dev/null")
+
 #ifdef GALOIS_ENABLE_GPU
 #include "cc_pull_cuda.h"
 struct CUDA_Context* cuda_ctx;
@@ -153,8 +156,10 @@ struct ConnectedComp {
                 syncSubstrate->get_run_identifier("ConnectedComp").c_str()));
       }
 
+      MARKER_START(10);
       syncSubstrate->sync<writeSource, readDestination, Reduce_min_comp_current,
                           Bitset_comp_current, async>("ConnectedComp");
+      MARKER_END(10);
 
       galois::runtime::reportStat_Tsum(
           REGION_NAME, "NumWorkItems_" + (syncSubstrate->get_run_identifier()),
