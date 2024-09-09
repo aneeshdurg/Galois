@@ -107,11 +107,11 @@ struct TC {
       Graph::edge_iterator vIterEnd = graph->edge_end(v);
 
       for (auto wIter : graph->edges(w)) {
-        auto x                      = graph->getEdgeDst(wIter);
-        Graph::edge_iterator vvIter = vIterBeg;
-        while (graph->getEdgeDst(vvIter) < x && vvIter < vIterEnd) {
-          vvIter++;
-        }
+        auto x      = graph->getEdgeDst(wIter);
+        auto vvIter = std::lower_bound(vIterBeg, vIterEnd, x,
+                                       [&](Graph::edge_iterator it, GNode x) {
+                                         return graph->getEdgeDst(it) < x;
+                                       });
         if (vvIter < vIterEnd && x == graph->getEdgeDst(vvIter)) {
           ++numTriangles_local;
         }
