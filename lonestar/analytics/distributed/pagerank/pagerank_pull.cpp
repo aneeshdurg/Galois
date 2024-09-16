@@ -270,9 +270,10 @@ struct PageRank {
       // MARKER_START(14);
       syncSubstrate->set_num_round(_num_iterations);
       dga.reset();
-      galois::gPrint("[", net.ID, "] PageRank_delta::go run called\n");
-      //MARKER_END(14);
-      //MARKER_START(8);
+      galois::gPrint("[", net.ID, "] PageRank_delta::go run called",
+                     _num_iterations, "/", maxIterations, "\n");
+      // MARKER_END(14);
+      // MARKER_START(8);
       PageRank_delta<async>::go(_graph, dga);
       // MARKER_END(8);
       // reset residual on mirrors
