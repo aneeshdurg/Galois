@@ -236,6 +236,12 @@ struct PageRank_delta {
 #define MARKER_START(x) system("ping 1.2.3." #x " -c 1 -s 1 >/dev/null")
 #define MARKER_END(x) system("ping 1.2.4." #x " -c 1 -s 1 >/dev/null")
 
+#undef MARKER_START
+#undef MARKER_END
+
+#define MARKER_START(x)
+#define MARKER_END(x)
+
 // TODO: GPU code operator does not match CPU's operator (cpu accumulates sum
 // and adds all at once, GPU adds each pulled value individually/atomically)
 template <bool async>
